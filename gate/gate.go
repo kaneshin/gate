@@ -1,6 +1,9 @@
 package gate
 
-import "net/http"
+import (
+	"net/http"
+	"net/url"
+)
 
 const (
 	bodyTypeJSON       = "application/json; charset=utf-8"
@@ -9,7 +12,8 @@ const (
 
 type (
 	service struct {
-		config *Config
+		config  *Config
+		baseURL *url.URL
 	}
 )
 
@@ -28,4 +32,11 @@ func newService(config *Config) *service {
 	return &service{
 		config: config,
 	}
+}
+
+// withBaseURL sets a base url value returning a service pointer
+// for chaining.
+func (s *service) withBaseURL(baseURL string) *service {
+	s.baseURL, _ = url.Parse(baseURL)
+	return s
 }

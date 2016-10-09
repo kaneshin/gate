@@ -5,14 +5,12 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"net/url"
 )
 
 type (
 	// SlackIncomingService is a slack incoming webhook service.
 	SlackIncomingService struct {
 		*service
-		baseURL *url.URL
 	}
 )
 
@@ -26,7 +24,7 @@ func NewSlackIncomingService(config *Config) *SlackIncomingService {
 // WithBaseURL sets a base url value returning a service pointer
 // for chaining.
 func (s *SlackIncomingService) WithBaseURL(baseURL string) *SlackIncomingService {
-	s.baseURL, _ = url.Parse(baseURL)
+	s.service.withBaseURL(baseURL)
 	return s
 }
 

@@ -7,6 +7,8 @@ type (
 	Config struct {
 		// The HTTP client to use when sending requests.
 		HTTPClient *http.Client
+
+		AccessToken string
 	}
 )
 
@@ -23,5 +25,12 @@ func NewConfig() *Config {
 // for chaining.
 func (c *Config) WithHTTPClient(client *http.Client) *Config {
 	c.HTTPClient = client
+	return c
+}
+
+// WithAccessToken sets a access token value to verify service returning
+// a Config pointer for chaining.
+func (c *Config) WithAccessToken(token string) *Config {
+	c.AccessToken = token
 	return c
 }
