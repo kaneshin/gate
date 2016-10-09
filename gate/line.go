@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"io"
 	"net/http"
+
+	"github.com/kaneshin/gate/gate/line"
 )
 
 type (
@@ -15,16 +17,22 @@ type (
 
 // NewLINEService returns a new LINEService.
 func NewLINEService(config *Config) *LINEService {
-	const notifyAPIURL = "https://notify-api.line.me/api/notify"
 	svc := &LINEService{
-		service: newService(config).withBaseURL(notifyAPIURL),
+		service: newService(config).withBaseURL(line.NotifyAPIURL),
 	}
 	return svc
 }
 
+// NewPayload returns a new Payload.
+func (s LINEService) NewPayload(text string) line.Payload {
+	p := line.Payload{
+		Message: text,
+	}
+	return p
+}
+
 // Post posts data to LINE.
 func (s LINEService) Post(v interface{}) (*http.Response, error) {
-
 	var body io.Reader
 	switch v := v.(type) {
 	case io.Reader:
@@ -32,6 +40,14 @@ func (s LINEService) Post(v interface{}) (*http.Response, error) {
 
 	case string:
 		buf := bytes.NewBufferString("message=" + v)
+		body = buf
+
+	case line.Payload:
+		buf := bytes.NewBufferString("message=" + v.Message)
+		body = buf
+
+	case *line.Payload:
+		buf := bytes.NewBufferString("message=" + v.Message)
 		body = buf
 
 	}

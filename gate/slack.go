@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+
+	"github.com/kaneshin/gate/gate/slack"
 )
 
 type (
@@ -29,27 +31,24 @@ func (s *SlackIncomingService) WithBaseURL(baseURL string) *SlackIncomingService
 }
 
 // NewPayload returns a new Payload.
-func (s SlackIncomingService) NewPayload(channel, text string, atts ...Attachment) Payload {
-	p := Payload{
+func (s SlackIncomingService) NewPayload(channel, text string, atts ...slack.Attachment) slack.Payload {
+	p := slack.Payload{
 		Channel: channel,
 		Text:    text,
 	}
 
-	if len(atts) > 0 {
-		p.Attachments = atts
-	}
+	p.Attachments = atts
 	return p
 }
 
 // Post posts data to slack.
 func (s SlackIncomingService) Post(v interface{}) (*http.Response, error) {
-
 	var body io.Reader
 	switch v := v.(type) {
 	case io.Reader:
 		body = v
 
-	case Payload, *Payload:
+	case slack.Payload, *slack.Payload:
 		buf := bytes.NewBufferString("payload=")
 		if err := json.NewEncoder(buf).Encode(v); err != nil {
 			return nil, err
@@ -58,5 +57,11 @@ func (s SlackIncomingService) Post(v interface{}) (*http.Response, error) {
 
 	}
 
-	return s.config.HTTPClient.Post(s.baseURL.String(), bodyTypeURLEncoded, body)
+	req, err := http.NewRequest("POST", s.baseURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Content-Type", bodyTypeURLEncoded)
+
+	return s.config.HTTPClient.Do(req)
 }

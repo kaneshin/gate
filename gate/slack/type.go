@@ -1,4 +1,4 @@
-package gate
+package slack
 
 import (
 	"encoding/json"
