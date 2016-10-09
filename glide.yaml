@@ -1,0 +1,6 @@
+package: github.com/kaneshin/gate
+import: []
+testImport:
+- package: github.com/stretchr/testify
+  subpackages:
+  - assert
