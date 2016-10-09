@@ -38,8 +38,8 @@ vet:
 
 cyclo: gocyclo
 	@echo "gocyclo -over 20"
-	@cyclo=`gocyclo -over 20 .`; \
-		cyclo=`echo "$$cyclo" | grep -E -v -e ${CYCLOIGNOREDEPS}/`; \
+	@cyclo=`gocyclo -over 20 . 2>&1`; \
+		cyclo=`echo "$$cyclo" | grep -E -v -e ${CYCLOIGNOREDEPS}`; \
 		echo "$$cyclo"; if [ "$$cyclo" != "" ]; then exit 1; fi
 
 test:
