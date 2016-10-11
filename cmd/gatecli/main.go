@@ -19,6 +19,8 @@ var (
 	channel  = flag.String("channel", "", "")
 	username = flag.String("username", "", "")
 	emoji    = flag.String("emoji", "", "")
+
+	code = flag.Bool("code", false, "")
 )
 
 var re = regexp.MustCompile("^https?.*\\.(png|jpg|jpeg|gif)($|\\?)")
@@ -49,7 +51,11 @@ func main() {
 	}
 
 	if body != nil {
-		val.Set("message", string(body))
+		if *code {
+			val.Set("message", "```"+str+"```")
+		} else {
+			val.Set("message", str)
+		}
 	}
 
 	if _, err := http.PostForm(
