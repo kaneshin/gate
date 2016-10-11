@@ -140,10 +140,10 @@ func run() int {
 
 			if color != "" {
 				att := slack.Attachment{
-					Color:   color,
-					Pretext: message,
-					Text:    message,
+					Color: color,
+					Text:  message,
 				}
+				payload.Text = ""
 				payload.Attachments = append(payload.Attachments, att)
 			}
 
