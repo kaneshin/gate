@@ -22,13 +22,13 @@ gate -config=/path/to/conf.toml -port=8080
 conf.toml
 
 ```toml
-[slack]
-incoming_url = "[your-incoming-url]"
-channel      = "general"
-username     = "gate"
-icon_emoji   = ":ghost:"
+[slack.incoming]
+url         = "[your-incoming-url]"
+channel     = "general"
+username    = "gate"
+icon_emoji  = ":ghost:"
 
-[line]
+[line.notify]
 access_token = "[your-access-token]"
 
 [facebook.messenger]
