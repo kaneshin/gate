@@ -40,6 +40,8 @@ var (
 )
 
 func main() {
+	flag.Parse()
+
 	var c config
 	if _, err := toml.DecodeFile(os.ExpandEnv(*configPath), &c); err != nil {
 		log.Fatal(err)
