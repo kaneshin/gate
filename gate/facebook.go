@@ -10,15 +10,15 @@ import (
 )
 
 type (
-	// FacebookService is a slack incoming webhook service.
-	FacebookService struct {
+	// FacebookMessengerService is a slack incoming webhook service.
+	FacebookMessengerService struct {
 		*service
 	}
 )
 
-// NewFacebookService returns a new FacebookService.
-func NewFacebookService(config *Config) *FacebookService {
-	svc := &FacebookService{
+// NewFacebookMessengerService returns a new FacebookMessengerService.
+func NewFacebookMessengerService(config *Config) *FacebookMessengerService {
+	svc := &FacebookMessengerService{
 		service: newService(config).withBaseURL(facebook.SendAPIURL),
 	}
 
@@ -30,7 +30,7 @@ func NewFacebookService(config *Config) *FacebookService {
 }
 
 // NewPayload returns a new Payload.
-func (s FacebookService) NewPayload(id, text string) facebook.Payload {
+func (s FacebookMessengerService) NewPayload(id, text string) facebook.Payload {
 	p := facebook.Payload{
 		Recipient: facebook.Recipient{
 			ID: id,
@@ -44,7 +44,7 @@ func (s FacebookService) NewPayload(id, text string) facebook.Payload {
 }
 
 // Post posts data to Facebook.
-func (s FacebookService) Post(v interface{}) (*http.Response, error) {
+func (s FacebookMessengerService) Post(v interface{}) (*http.Response, error) {
 	var body io.Reader
 	switch v := v.(type) {
 	case io.Reader:

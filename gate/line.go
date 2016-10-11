@@ -9,22 +9,22 @@ import (
 )
 
 type (
-	// LINEService is a slack incoming webhook service.
-	LINEService struct {
+	// LINENotifyService is a slack incoming webhook service.
+	LINENotifyService struct {
 		*service
 	}
 )
 
-// NewLINEService returns a new LINEService.
-func NewLINEService(config *Config) *LINEService {
-	svc := &LINEService{
+// NewLINENotifyService returns a new LINENotifyService.
+func NewLINENotifyService(config *Config) *LINENotifyService {
+	svc := &LINENotifyService{
 		service: newService(config).withBaseURL(line.NotifyAPIURL),
 	}
 	return svc
 }
 
 // NewPayload returns a new Payload.
-func (s LINEService) NewPayload(text string) line.Payload {
+func (s LINENotifyService) NewPayload(text string) line.Payload {
 	p := line.Payload{
 		Message: text,
 	}
@@ -32,7 +32,7 @@ func (s LINEService) NewPayload(text string) line.Payload {
 }
 
 // Post posts data to LINE.
-func (s LINEService) Post(v interface{}) (*http.Response, error) {
+func (s LINENotifyService) Post(v interface{}) (*http.Response, error) {
 	var body io.Reader
 	switch v := v.(type) {
 	case io.Reader:
