@@ -2,12 +2,14 @@ artifacts
 coverage.txt
 .envrc
 bindata.go
-/vendor/
 default.etcd/
 .idea/*
 *.orig
 .bin
 .local
+
+# Vendored sources.  These are synced during the build by govendor.
+vendor/*/
 
 # Created by https://www.gitignore.io/api/go
 

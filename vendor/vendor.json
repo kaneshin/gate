@@ -1,0 +1,67 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "hqDDDpue/5363luidNMBS8z8eJU=",
+			"path": "github.com/BurntSushi/toml",
+			"revision": "99064174e013895bbd9b025c31100bd1d9b590ca",
+			"revisionTime": "2016-07-17T15:07:09Z"
+		},
+		{
+			"checksumSHA1": "Lf3uUXTkKK5DJ37BxQvxO1Fq+K8=",
+			"path": "github.com/davecgh/go-spew/spew",
+			"revision": "6d212800a42e8ab5c146b8ace3490ee17e5225f9",
+			"revisionTime": "2016-09-07T16:21:46Z"
+		},
+		{
+			"checksumSHA1": "g/V4qrXjUGG9B+e3hB+4NAYJ5Gs=",
+			"path": "github.com/gorilla/context",
+			"revision": "08b5f424b9271eedf6f9f0ce86cb9396ed337a42",
+			"revisionTime": "2016-08-17T18:46:32Z"
+		},
+		{
+			"checksumSHA1": "urMd7A9QPAJYY0GZJL9qBhlUmD8=",
+			"path": "github.com/gorilla/mux",
+			"revision": "757bef944d0f21880861c2dd9c871ca543023cba",
+			"revisionTime": "2016-09-20T23:08:13Z"
+		},
+		{
+			"checksumSHA1": "LuFv4/jlrmFNnDb/5SCSEPAM9vU=",
+			"path": "github.com/pmezard/go-difflib/difflib",
+			"revision": "792786c7400a136282c1664665ae0a8db921c6c2",
+			"revisionTime": "2016-01-10T10:55:54Z"
+		},
+		{
+			"checksumSHA1": "K0crHygPTP42i1nLKWphSlvOQJw=",
+			"path": "github.com/stretchr/objx",
+			"revision": "1a9d0bb9f541897e62256577b352fdbc1fb4fd94",
+			"revisionTime": "2015-09-28T12:21:52Z"
+		},
+		{
+			"checksumSHA1": "/kKwYqD04AkkDZFQhGwklKw3RFA=",
+			"path": "github.com/stretchr/testify",
+			"revision": "976c720a22c8eb4eb6a0b4348ad85ad12491a506",
+			"revisionTime": "2016-09-25T22:06:09Z"
+		},
+		{
+			"checksumSHA1": "Q2V7Zs3diLmLfmfbiuLpSxETSuY=",
+			"path": "github.com/stretchr/testify/assert",
+			"revision": "976c720a22c8eb4eb6a0b4348ad85ad12491a506",
+			"revisionTime": "2016-09-25T22:06:09Z"
+		},
+		{
+			"checksumSHA1": "fg3TzS9/QK3wZbzei3Z6O8XPLHg=",
+			"path": "github.com/stretchr/testify/http",
+			"revision": "976c720a22c8eb4eb6a0b4348ad85ad12491a506",
+			"revisionTime": "2016-09-25T22:06:09Z"
+		},
+		{
+			"checksumSHA1": "Je6cJkYWj2SoaHDMGpE00BGi9sw=",
+			"path": "github.com/stretchr/testify/mock",
+			"revision": "976c720a22c8eb4eb6a0b4348ad85ad12491a506",
+			"revisionTime": "2016-09-25T22:06:09Z"
+		}
+	],
+	"rootPath": "github.com/kaneshin/gate"
+}
