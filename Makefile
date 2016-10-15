@@ -6,7 +6,7 @@ VETIGNOREDEPS='vendor/.+\.go'
 CYCLOIGNOREDEPS='vendor/.+\.go'
 TARGET_ONLY_PKGS=$(shell go list ./... 2> /dev/null | grep -v "/misc/" | grep -v "/vendor/")
 INTERNAL_BIN=.bin
-HAVE_GLIDE:=$(shell which glide)
+HAVE_GOVENDOR:=$(shell which govendor)
 HAVE_GOLINT:=$(shell which golint)
 HAVE_GOCYCLO:=$(shell which gocyclo)
 HAVE_GOCOV:=$(shell which gocov)
@@ -55,9 +55,9 @@ test-report:
 		go test -coverprofile=profile.out -covermode=atomic $$d || exit 1; \
 		[ -f profile.out ] && cat profile.out >> coverage.txt && rm profile.out || true; done
 
-install-deps: glide
+install-deps: govendor
 	@echo "Installing all dependencies"
-	@PATH=$(INTERNAL_BIN):$(PATH) glide i
+	@PATH=$(INTERNAL_BIN):$(PATH) govendor sync
 
 golint:
 ifndef HAVE_GOLINT
@@ -77,12 +77,8 @@ ifndef HAVE_GOCOV
 	@go get -u github.com/axw/gocov/gocov
 endif
 
-glide:
-ifndef HAVE_GLIDE
-	@echo "Installing glide"
-	@mkdir -p $(INTERNAL_BIN)
-	@GLIDE_VERSION='v0.12.2'; \
-		wget -q -O - https://github.com/Masterminds/glide/releases/download/$$GLIDE_VERSION/glide-$$GLIDE_VERSION-$(GOOS)-$(GOARCH).tar.gz | tar xvz
-	@mv $(GOOS)-$(GOARCH)/glide $(INTERNAL_BIN)/glide
-	@rm -rf $(GOOS)-$(GOARCH)
+govendor:
+ifndef HAVE_GOVENDOR
+	@echo "Installing govendor"
+	@go get -u github.com/kardianos/govendor
 endif

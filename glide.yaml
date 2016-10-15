@@ -1,8 +1,0 @@
-package: github.com/kaneshin/gate
-import:
-- package: github.com/BurntSushi/toml
-- package: github.com/gorilla/mux
-testImport:
-- package: github.com/stretchr/testify
-  subpackages:
-  - assert
