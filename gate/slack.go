@@ -31,13 +31,11 @@ func (s *SlackIncomingService) WithBaseURL(baseURL string) *SlackIncomingService
 }
 
 // NewPayload returns a new Payload.
-func (s SlackIncomingService) NewPayload(channel, text string, atts ...slack.Attachment) slack.Payload {
+func (s SlackIncomingService) NewPayload(channel, text string) slack.Payload {
 	p := slack.Payload{
 		Channel: channel,
 		Text:    text,
 	}
-
-	p.Attachments = atts
 	return p
 }
 

@@ -15,6 +15,9 @@ func TestService(t *testing.T) {
 		assert.NotNil(t, svc)
 		assert.NotNil(t, svc.config)
 		assert.NotNil(t, svc.config.HTTPClient)
+
+		svc.withBaseURL("http://example.com?v=1")
+		assert.Equal(t, "http://example.com?v=1", svc.baseURL.String())
 	})
 
 	t.Run("Service with nil config", func(t *testing.T) {
