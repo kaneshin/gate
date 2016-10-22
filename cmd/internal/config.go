@@ -39,7 +39,7 @@ var (
 	}{}
 )
 
-func init() {
+func ParseFlag() {
 	flag.Parse()
 
 	fp := os.ExpandEnv(*configPath)

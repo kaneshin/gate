@@ -21,6 +21,8 @@ var (
 )
 
 func main() {
+	internal.ParseFlag()
+
 	httpClient := http.DefaultClient
 
 	{

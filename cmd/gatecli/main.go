@@ -28,7 +28,7 @@ var (
 var re = regexp.MustCompile("^https?.*\\.(png|jpg|jpeg|gif)($|\\?)")
 
 func main() {
-	flag.Parse()
+	internal.ParseFlag()
 
 	// Execute: echo "foo" | go run main.go
 	body, err := ioutil.ReadAll(os.Stdin)
