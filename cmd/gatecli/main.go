@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -9,10 +10,11 @@ import (
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/kaneshin/gate/cmd/internal"
 )
 
 var (
-	host  = flag.String("host", "http://localhost:8080", "")
 	color = flag.String("color", "", "")
 	image = flag.String("image", "", "")
 
@@ -59,7 +61,7 @@ func main() {
 	}
 
 	if _, err := http.PostForm(
-		*host,
+		fmt.Sprintf("%s:%d", internal.Config.Gate.Host, internal.Config.Gate.Port),
 		val,
 	); err != nil {
 		log.Fatal(err)

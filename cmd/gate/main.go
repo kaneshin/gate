@@ -1,46 +1,18 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 
-	"github.com/BurntSushi/toml"
 	"github.com/gorilla/mux"
 
+	"github.com/kaneshin/gate/cmd/internal"
 	"github.com/kaneshin/gate/gate"
 	"github.com/kaneshin/gate/gate/facebook"
 	"github.com/kaneshin/gate/gate/slack"
 )
-
-var (
-	configPath = flag.String("config", "$HOME/.gate.tml", "")
-	port       = flag.Int("port", 8080, "")
-)
-
-var config = struct {
-	Slack struct {
-		Incoming struct {
-			URL       string `toml:"url"`
-			Channel   string `toml:"channel"`
-			Username  string `toml:"username"`
-			IconEmoji string `toml:"icon_emoji"`
-		} `toml:"incoming"`
-	} `toml:"slack"`
-	LINE struct {
-		Notify struct {
-			AccessToken string `toml:"access_token"`
-		} `toml:"notify"`
-	} `toml:"line"`
-	Facebook struct {
-		Messenger struct {
-			ID          string `toml:"id"`
-			AccessToken string `toml:"access_token"`
-		} `toml:"messenger"`
-	} `toml:"facebook"`
-}{}
 
 var (
 	slackSvc    *gate.SlackIncomingService
@@ -49,19 +21,11 @@ var (
 )
 
 func main() {
-	flag.Parse()
-
-	fp := os.ExpandEnv(*configPath)
-	if _, err := toml.DecodeFile(fp, &config); err != nil {
-		log.Fatal(err)
-		return
-	}
-
 	httpClient := http.DefaultClient
 
 	{
 		var str string
-		if str = config.Slack.Incoming.URL; str == "" {
+		if str = internal.Config.Slack.Incoming.URL; str == "" {
 			str = os.Getenv("SLACK_INCOMING_URL")
 		}
 		if str != "" {
@@ -73,7 +37,7 @@ func main() {
 
 	{
 		var str string
-		if str = config.LINE.Notify.AccessToken; str == "" {
+		if str = internal.Config.LINE.Notify.AccessToken; str == "" {
 			str = os.Getenv("LINE_NOTIFY_ACCESS_TOKEN")
 		}
 		lineSvc = gate.NewLINENotifyService(
@@ -83,7 +47,7 @@ func main() {
 
 	{
 		var str string
-		if str = config.Facebook.Messenger.AccessToken; str == "" {
+		if str = internal.Config.Facebook.Messenger.AccessToken; str == "" {
 			str = os.Getenv("FACEBOOK_MESSENGER_ACCESS_TOKEN")
 		}
 		facebookSvc = gate.NewFacebookMessengerService(
@@ -125,11 +89,11 @@ func run() int {
 			)
 
 			if ch == "" {
-				ch = config.Slack.Incoming.Channel
+				ch = internal.Config.Slack.Incoming.Channel
 			}
 			payload := slackSvc.NewPayload(ch, message)
-			payload.Username = config.Slack.Incoming.Username
-			payload.IconEmoji = config.Slack.Incoming.IconEmoji
+			payload.Username = internal.Config.Slack.Incoming.Username
+			payload.IconEmoji = internal.Config.Slack.Incoming.IconEmoji
 
 			if name != "" {
 				payload.Username = name
@@ -170,7 +134,7 @@ func run() int {
 				id = r.FormValue("facebook.id")
 			)
 			if id == "" {
-				id = config.Facebook.Messenger.ID
+				id = internal.Config.Facebook.Messenger.ID
 			}
 			payload := facebookSvc.NewPayload(id, message)
 			payload.NotificationType = facebook.NotificationTypeRegular
@@ -180,6 +144,6 @@ func run() int {
 		}
 	}).Methods("POST")
 
-	log.Panic(http.ListenAndServe(fmt.Sprintf(":%d", *port), r))
+	log.Panic(http.ListenAndServe(fmt.Sprintf(":%d", internal.Config.Gate.Port), r))
 	return 0
 }
