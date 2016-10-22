@@ -39,6 +39,7 @@ var (
 	}{}
 )
 
+// ParseFlag parses flag options and toml file.
 func ParseFlag() {
 	flag.Parse()
 
