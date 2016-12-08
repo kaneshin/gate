@@ -3,10 +3,9 @@ package gate
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/kaneshin/gate/gate/slack"
 	"io"
 	"net/http"
-
-	"github.com/kaneshin/gate/gate/slack"
 )
 
 type (
