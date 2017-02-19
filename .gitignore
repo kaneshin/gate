@@ -9,7 +9,7 @@ default.etcd/
 .local
 
 # Vendored sources.  These are synced during the build by govendor.
-vendor/*/
+# vendor/*/
 
 # Created by https://www.gitignore.io/api/go
 

@@ -1,45 +1,40 @@
-GOVERSION=$(shell go version)
-GOOS=$(word 1,$(subst /, ,$(lastword $(GOVERSION))))
-GOARCH=$(word 2,$(subst /, ,$(lastword $(GOVERSION))))
-LINTIGNOREDEPS='vendor/.+\.go'
-VETIGNOREDEPS='vendor/.+\.go'
-CYCLOIGNOREDEPS='vendor/.+\.go'
-TARGET_ONLY_PKGS=$(shell go list ./... 2> /dev/null | grep -v "/misc/" | grep -v "/vendor/")
-INTERNAL_BIN=.bin
-HAVE_GOVENDOR:=$(shell which govendor)
+TARGET_ONLY_PKGS=$(shell go list ./... 2> /dev/null | grep -v "/vendor/")
+IGNORE_DEPS_GOLINT='vendor/.+\.go'
+IGNORE_DEPS_GOVET='vendor/.+\.go'
+IGNORE_DEPS_GOCYCLO='vendor/.+\.go'
 HAVE_GOLINT:=$(shell which golint)
 HAVE_GOCYCLO:=$(shell which gocyclo)
 HAVE_GOCOV:=$(shell which gocov)
-VERSION=$(patsubst "%",%,$(lastword $(shell grep 'const Version' gate.go)))
-COMMITISH=$(shell git rev-parse HEAD)
 
-.PHONY:
+.PHONY: init build install unit unit-report
 
-init: install-deps
+init:
 
-build: install-deps
+build:
 
-install: install-deps
+install:
 
 unit: lint vet cyclo build test
 unit-report: lint vet cyclo build test-report
 
+.PHONY: lint vet cyclo test coverage test-report
+
 lint: golint
 	@echo "go lint"
 	@lint=`golint ./...`; \
-		lint=`echo "$$lint" | grep -E -v -e ${LINTIGNOREDEPS}`; \
+		lint=`echo "$$lint" | grep -E -v -e ${IGNORE_DEPS_GOLINT}`; \
 		echo "$$lint"; if [ "$$lint" != "" ]; then exit 1; fi
 
 vet:
 	@echo "go vet"
 	@vet=`go tool vet -all -structtags -shadow $(shell ls -d */ | grep -v "vendor") 2>&1`; \
-		vet=`echo "$$vet" | grep -E -v -e ${VETIGNOREDEPS}`; \
+		vet=`echo "$$vet" | grep -E -v -e ${IGNORE_DEPS_GOVET}`; \
 		echo "$$vet"; if [ "$$vet" != "" ]; then exit 1; fi
 
 cyclo: gocyclo
 	@echo "gocyclo -over 20"
 	@cyclo=`gocyclo -over 20 . 2>&1`; \
-		cyclo=`echo "$$cyclo" | grep -E -v -e ${CYCLOIGNOREDEPS}`; \
+		cyclo=`echo "$$cyclo" | grep -E -v -e ${IGNORE_DEPS_GOCYCLO}`; \
 		echo "$$cyclo"; if [ "$$cyclo" != "" ]; then exit 1; fi
 
 test:
@@ -55,9 +50,7 @@ test-report:
 		go test -coverprofile=profile.out -covermode=atomic $$d || exit 1; \
 		[ -f profile.out ] && cat profile.out >> coverage.txt && rm profile.out || true; done
 
-install-deps: govendor
-	@echo "Installing all dependencies"
-	@PATH=$(INTERNAL_BIN):$(PATH) govendor sync
+.PHONY: golint gocyclo gocov
 
 golint:
 ifndef HAVE_GOLINT
@@ -75,10 +68,4 @@ gocov:
 ifndef HAVE_GOCOV
 	@echo "Installing gocov"
 	@go get -u github.com/axw/gocov/gocov
-endif
-
-govendor:
-ifndef HAVE_GOVENDOR
-	@echo "Installing govendor"
-	@go get -u github.com/kardianos/govendor
 endif

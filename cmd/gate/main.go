@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/gorilla/mux"
-
 	"github.com/kaneshin/gate/cmd/internal"
 	"github.com/kaneshin/gate/gate"
 	"github.com/kaneshin/gate/gate/facebook"
@@ -68,9 +66,11 @@ func run() int {
 		facebookMessenger
 	)
 
-	r := mux.NewRouter()
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			return
+		}
 
-	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if r := recover(); r != nil {
 				log.Println(r)
@@ -144,8 +144,8 @@ func run() int {
 				log.Printf("error %v", err)
 			}
 		}
-	}).Methods("POST")
+	})
 
-	log.Panic(http.ListenAndServe(fmt.Sprintf(":%d", internal.Config.Gate.Port), r))
+	log.Panic(http.ListenAndServe(fmt.Sprintf(":%d", internal.Config.Gate.Port), http.DefaultServeMux))
 	return 0
 }

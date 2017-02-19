@@ -1,0 +1,7 @@
+{
+    "dependencies": {
+        "github.com/BurntSushi/toml": {
+            "branch": "master"
+        }
+    }
+}
