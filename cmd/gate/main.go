@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/kaneshin/gate"
 	"github.com/kaneshin/gate/cmd/internal"
-	"github.com/kaneshin/gate/gate"
-	"github.com/kaneshin/gate/gate/facebook"
-	"github.com/kaneshin/gate/gate/slack"
+	"github.com/kaneshin/gate/facebook"
+	"github.com/kaneshin/gate/slack"
 )
 
 var (

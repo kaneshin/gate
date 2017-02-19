@@ -5,7 +5,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/kaneshin/gate/gate/line"
+	"github.com/kaneshin/gate/line"
 )
 
 type (

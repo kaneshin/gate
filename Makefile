@@ -6,19 +6,19 @@ HAVE_GOLINT:=$(shell which golint)
 HAVE_GOCYCLO:=$(shell which gocyclo)
 HAVE_GOCOV:=$(shell which gocov)
 
-.PHONY: init build install unit unit-report
+TARGETS=$(addprefix github.com/kaneshin/gate/cmd/,gate gatecli)
+OBJS=$(notdir $(TARGETS))
 
-init:
+all: $(TARGETS)
 
-build:
+$(TARGETS):
+	@go install -v $@
 
-install:
-
-unit: lint vet cyclo build test
-unit-report: lint vet cyclo build test-report
+.PHONY: unit unit-report
+unit: lint vet cyclo $(TARGETS) test
+unit-report: lint vet cyclo $(TARGETS) test-report
 
 .PHONY: lint vet cyclo test coverage test-report
-
 lint: golint
 	@echo "go lint"
 	@lint=`golint ./...`; \
@@ -51,7 +51,6 @@ test-report:
 		[ -f profile.out ] && cat profile.out >> coverage.txt && rm profile.out || true; done
 
 .PHONY: golint gocyclo gocov
-
 golint:
 ifndef HAVE_GOLINT
 	@echo "Installing linter"

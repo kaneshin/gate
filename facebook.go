@@ -6,7 +6,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/kaneshin/gate/gate/facebook"
+	"github.com/kaneshin/gate/facebook"
 )
 
 type (
