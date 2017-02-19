@@ -8,7 +8,7 @@
 ## Installation
 
 ```shell
-go get -d github.com/kaneshin/gate/cmd/...
+go get -u github.com/kaneshin/gate/cmd/...
 ```
 
 ## Usage
