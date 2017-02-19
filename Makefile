@@ -15,8 +15,8 @@ $(TARGETS):
 	@go install -v $@
 
 .PHONY: unit unit-report
-unit: lint vet cyclo $(TARGETS) test
-unit-report: lint vet cyclo $(TARGETS) test-report
+unit: lint vet cyclo test
+unit-report: lint vet cyclo test-report
 
 .PHONY: lint vet cyclo test coverage test-report
 lint: golint
