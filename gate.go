@@ -5,6 +5,9 @@ import (
 	"net/url"
 )
 
+// Version represents gate's semantic version.
+const Version = "v1.0.0"
+
 const (
 	bodyTypeURLEncoded = "application/x-www-form-urlencoded"
 	bodyTypeJSON       = "application/json; charset=utf-8"
