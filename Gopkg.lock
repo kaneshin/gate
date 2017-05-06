@@ -1,0 +1,25 @@
+memo = "ae7609267a54e9a4c53323f2e3ff16199d0a0bbea9d57694cc5ad23def548aa7"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/BurntSushi/toml"
+  packages = ["."]
+  revision = "b26d9c308763d68093482582cea63d69be07a0f0"
+
+[[projects]]
+  name = "github.com/davecgh/go-spew"
+  packages = ["spew"]
+  revision = "346938d642f2ec3594ed81d874461961cd0faa76"
+  version = "v1.1.0"
+
+[[projects]]
+  name = "github.com/pmezard/go-difflib"
+  packages = ["difflib"]
+  revision = "792786c7400a136282c1664665ae0a8db921c6c2"
+  version = "v1.0.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/stretchr/testify"
+  packages = ["assert"]
+  revision = "4d4bfba8f1d1027c4fdbe371823030df51419987"
