@@ -54,8 +54,8 @@ vet:
 		echo "$$vet"; if [ "$$vet" != "" ]; then exit 1; fi
 
 cyclo: gocyclo
-	@echo "gocyclo -over 20"
-	@cyclo=`gocyclo -over 20 . 2>&1`; \
+	@echo "gocyclo -over 30"
+	@cyclo=`gocyclo -over 30 . 2>&1`; \
 		cyclo=`echo "$$cyclo" | grep -E -v -e ${IGNORE_DEPS_GOCYCLO}`; \
 		echo "$$cyclo"; if [ "$$cyclo" != "" ]; then exit 1; fi
 
