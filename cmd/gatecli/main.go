@@ -10,6 +10,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"syscall"
 
 	"github.com/kaneshin/gate/cmd/internal"
 )
@@ -29,6 +30,16 @@ var re = regexp.MustCompile("^https?.*\\.(png|jpg|jpeg|gif)($|\\?)")
 
 func main() {
 	internal.ParseFlag()
+
+	sigc := make(chan os.Signal)
+	internal.Trap(sigc, map[syscall.Signal]func(os.Signal){
+		syscall.SIGINT: func(sig os.Signal) {
+			fmt.Println("INT", sig)
+		},
+		syscall.SIGTERM: func(sig os.Signal) {
+			fmt.Println("TERM", sig)
+		},
+	})
 
 	// Execute: echo "foo" | go run main.go
 	body, err := ioutil.ReadAll(os.Stdin)
@@ -60,10 +71,8 @@ func main() {
 		}
 	}
 
-	if _, err := http.PostForm(
-		fmt.Sprintf("%s:%d", internal.Config.Gate.Host, internal.Config.Gate.Port),
-		val,
-	); err != nil {
+	url := fmt.Sprintf("%s:%d", internal.Config.Gate.Host, internal.Config.Gate.Port)
+	if _, err := http.PostForm(url, val); err != nil {
 		log.Fatal(err)
 	}
 }

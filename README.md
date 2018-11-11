@@ -16,7 +16,7 @@ go get github.com/kaneshin/gate/cmd/...
 ### gate
 
 ```shell
-gate -config=/path/to/conf.toml -port=8080
+gate -config=/path/to/config.toml -port=8080
 ```
 
 conf.toml
@@ -39,7 +39,7 @@ access_token = "[page-access-token]"
 ### gatecli
 
 ```shell
-echo "foobar" | gatecli -host=http://localhost:8080
+echo "foobar" | gatecli
 ```
 
 ## License
