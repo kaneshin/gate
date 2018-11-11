@@ -44,15 +44,15 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 		key := ""
 		if ch == "" {
-			if len(internal.Config.Slack.API.Incoming) > 0 {
-				ch = internal.Config.Slack.API.Incoming[0].Channel
+			if len(internal.Config.Slack.App.Incoming) > 0 {
+				ch = internal.Config.Slack.App.Incoming[0].Channel
 				key = ch
 			} else {
 				ch = internal.Config.Slack.Incoming.Channel
 				key = slackIncomingDefaultKey
 			}
 		} else {
-			for _, v := range internal.Config.Slack.API.Incoming {
+			for _, v := range internal.Config.Slack.App.Incoming {
 				if ch == v.Channel {
 					key = ch
 					break
@@ -134,7 +134,7 @@ func newSlackIncomingServices(hcl *http.Client) map[string]*gate.SlackIncomingSe
 		).WithBaseURL(url)
 	}
 
-	for _, v := range internal.Config.Slack.API.Incoming {
+	for _, v := range internal.Config.Slack.App.Incoming {
 		if v.URL == "" || v.Channel == "" {
 			continue
 		}

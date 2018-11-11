@@ -14,12 +14,12 @@ var Config = struct {
 		Port int    `toml:"port"`
 	} `toml:"gate"`
 	Slack struct {
-		API struct {
+		App struct {
 			Incoming []struct {
 				URL     string `toml:"url"`
 				Channel string `toml:"channel"`
 			}
-		} `toml:"api"`
+		} `toml:"app"`
 		Incoming struct {
 			URL       string `toml:"url"`
 			Channel   string `toml:"channel"`
