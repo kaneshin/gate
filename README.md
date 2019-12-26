@@ -1,7 +1,6 @@
 # Gate
 
 [![GoDoc](https://godoc.org/github.com/kaneshin/gate?status.svg)](https://godoc.org/github.com/kaneshin/gate)
-[![Build Status](https://travis-ci.org/kaneshin/gate.svg?branch=master)](https://travis-ci.org/kaneshin/gate)
 [![codecov](https://codecov.io/gh/kaneshin/gate/branch/master/graph/badge.svg)](https://codecov.io/gh/kaneshin/gate)
 [![Go Report Card](https://goreportcard.com/badge/github.com/kaneshin/gate)](https://goreportcard.com/report/github.com/kaneshin/gate)
 
@@ -13,33 +12,40 @@ go get github.com/kaneshin/gate/cmd/...
 
 ## Usage
 
+Create `~/.config/gate/config.yml` to be loaded by tools.
+
+```yml
+---
+default_target: 'slack.incoming.channel-1'
+
+env:
+  host: 'http://127.0.0.1'
+  port: 8080
+
+slack:
+  incoming:
+    channel-1: '[YOUR-INCOMING-URL]'
+    channel-2: '[YOUR-INCOMING-URL]'
+
+line:
+  notify:
+    room-1: '[YOUR-ACCESS-TOKEN]'
+```
+
 ### gate
 
 ```shell
-gate -config=/path/to/config.toml -port=8080
-```
+$ gate
 
-conf.toml
-
-```toml
-[slack.incoming]
-url         = "[your-incoming-url]"
-channel     = "general"
-username    = "gate"
-icon_emoji  = ":ghost:"
-
-[line.notify]
-access_token = "[your-access-token]"
-
-[facebook.messenger]
-id = "[sender-id]"
-access_token = "[page-access-token]"
+# gate -config=/path/to/config.yml
 ```
 
 ### gatecli
 
 ```shell
-echo "foobar" | gatecli
+$ echo "foobar" | gatecli
+
+# echo "foobar" | gatecli -config=/path/to/config.yml -target=slack.incomiong.channel-2
 ```
 
 ## License

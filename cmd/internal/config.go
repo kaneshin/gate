@@ -1,51 +1,31 @@
 package internal
 
-import (
-	"flag"
-	"os"
-
-	"github.com/BurntSushi/toml"
-)
-
 // Config represents a configuration of commands.
-var Config = struct {
-	Gate struct {
-		Host string `toml:"host"`
-		Port int    `toml:"port"`
-	} `toml:"gate"`
+var Config = config{
+	Targets: map[string]string{},
+}
+
+type config struct {
+	Targets       map[string]string
+	DefaultTarget string `yaml:"default_target"`
+	Env           struct {
+		Host string `yaml:"host"`
+		Port int    `yaml:"port"`
+	} `yaml:"env"`
 	Slack struct {
-		App struct {
-			Incoming []struct {
-				URL     string `toml:"url"`
-				Channel string `toml:"channel"`
-			}
-		} `toml:"app"`
-		Incoming struct {
-			URL       string `toml:"url"`
-			Channel   string `toml:"channel"`
-			Username  string `toml:"username"`
-			IconEmoji string `toml:"icon_emoji"`
-		} `toml:"incoming"`
-	} `toml:"slack"`
+		Incoming map[string]string `yaml:"incoming"`
+	} `yaml:"slack"`
 	LINE struct {
-		Notify struct {
-			AccessToken string `toml:"access_token"`
-		} `toml:"notify"`
-	} `toml:"line"`
-	Facebook struct {
-		Messenger struct {
-			ID          string `toml:"id"`
-			AccessToken string `toml:"access_token"`
-		} `toml:"messenger"`
-	} `toml:"facebook"`
-}{}
+		Notify map[string]string `yaml:"notify"`
+	} `yaml:"line"`
+}
 
-// ParseFlag parses flag options and toml file.
-func ParseFlag() error {
-	var configPath string
-	flag.StringVar(&configPath, "config", "$HOME/.config/gate.tml", "")
-	flag.Parse()
-
-	_, err := toml.DecodeFile(os.ExpandEnv(configPath), &Config)
-	return err
+func (c *config) apply() error {
+	for k, v := range c.Slack.Incoming {
+		c.Targets["slack.incoming."+k] = v
+	}
+	for k, v := range c.LINE.Notify {
+		c.Targets["line.notify."+k] = v
+	}
+	return nil
 }
