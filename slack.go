@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-
-	"github.com/kaneshin/gate/slack"
 )
 
 type (
@@ -30,36 +28,22 @@ func (s *SlackIncomingService) WithBaseURL(baseURL string) *SlackIncomingService
 	return s
 }
 
-// NewPayload returns a new Payload.
-func (s SlackIncomingService) NewPayload(channel, text string) slack.Payload {
-	p := slack.Payload{
-		Channel: channel,
-		Text:    text,
-	}
-	return p
-}
-
-// Post posts data to slack.
-func (s SlackIncomingService) Post(v interface{}) (*http.Response, error) {
-	var body io.Reader
-	switch v := v.(type) {
-	case io.Reader:
-		body = v
-
-	case slack.Payload, *slack.Payload:
-		buf := bytes.NewBufferString("payload=")
-		if err := json.NewEncoder(buf).Encode(v); err != nil {
-			return nil, err
-		}
-		body = buf
-
-	}
-
+// Post posts a payload to slack.
+func (s SlackIncomingService) Post(contentType string, body io.Reader) (*http.Response, error) {
 	req, err := http.NewRequest("POST", s.baseURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add("Content-Type", bodyTypeURLEncoded)
-
+	req.Header.Add("Content-Type", contentType)
 	return s.config.HTTPClient.Do(req)
+}
+
+// PostTextPayload posts a text payload to slack.
+func (s SlackIncomingService) PostTextPayload(payload TextPayload) (*http.Response, error) {
+	b, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+	buf := bytes.NewBuffer(b)
+	return s.Post(bodyTypeJSON, buf)
 }

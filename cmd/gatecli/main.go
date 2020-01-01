@@ -4,75 +4,65 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
-	"regexp"
 	"strings"
-	"syscall"
 
 	"github.com/kaneshin/gate/cmd/internal"
 )
 
 var (
-	color = flag.String("color", "", "")
-	image = flag.String("image", "", "")
-
-	channel  = flag.String("channel", "", "")
-	username = flag.String("username", "", "")
-	emoji    = flag.String("emoji", "", "")
-
-	code = flag.Bool("code", false, "")
+	target = flag.String("target", "", "comma-separeted available")
+	code   = flag.Bool("code", false, "")
 )
 
-var re = regexp.MustCompile("^https?.*\\.(png|jpg|jpeg|gif)($|\\?)")
+func run() error {
+	b, err := ioutil.ReadAll(os.Stdin)
+	if err != nil {
+		return err
+	}
+
+	text := strings.TrimSpace(string(b))
+	if text != "" {
+		if *target == "" {
+			*target = internal.Config.DefaultTarget
+		}
+
+		if *code {
+			text = fmt.Sprintf("```\n%s\n```", text)
+		}
+
+		val := url.Values{
+			"target": strings.Split(*target, ","),
+			"text":   []string{text},
+		}
+
+		url := fmt.Sprintf("%s:%d", internal.Config.Env.Host, internal.Config.Env.Port)
+		resp, err := http.PostForm(url, val)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+		b, err = ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		fmt.Println(string(b))
+	}
+	return nil
+}
 
 func main() {
-	internal.ParseFlag()
-
-	sigc := make(chan os.Signal)
-	internal.Trap(sigc, map[syscall.Signal]func(os.Signal){
-		syscall.SIGINT: func(sig os.Signal) {
-			fmt.Println("INT", sig)
-		},
-		syscall.SIGTERM: func(sig os.Signal) {
-			fmt.Println("TERM", sig)
-		},
-	})
-
-	// Execute: echo "foo" | go run main.go
-	body, err := ioutil.ReadAll(os.Stdin)
+	err := internal.Load()
 	if err != nil {
-		log.Fatal(err)
-	}
-	str := strings.TrimSpace(string(body))
-
-	if list := re.FindAllString(str, -1); len(list) > 0 {
-		if *image == "" {
-			*image = str
-			body = nil
-		}
+		fmt.Printf("%v\n", err)
+		os.Exit(1)
 	}
 
-	val := url.Values{
-		"color":          {*color},
-		"image":          {*image},
-		"slack.channel":  {*channel},
-		"slack.username": {*username},
-		"slack.emoji":    {*emoji},
-	}
-
-	if body != nil {
-		if *code {
-			val.Set("message", "```"+str+"```")
-		} else {
-			val.Set("message", str)
-		}
-	}
-
-	url := fmt.Sprintf("%s:%d", internal.Config.Gate.Host, internal.Config.Gate.Port)
-	if _, err := http.PostForm(url, val); err != nil {
-		log.Fatal(err)
+	err = run()
+	if err != nil {
+		fmt.Printf("%v\n", err)
+		os.Exit(1)
 	}
 }

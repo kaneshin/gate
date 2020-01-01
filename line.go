@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"io"
 	"net/http"
-
-	"github.com/kaneshin/gate/line"
 )
+
+// lineNotifyAPIURL is Notify API URL for LINE.
+const lineNotifyAPIURL = "https://notify-api.line.me/api/notify"
 
 type (
 	// LINENotifyService is a slack incoming webhook service.
@@ -18,46 +19,24 @@ type (
 // NewLINENotifyService returns a new LINENotifyService.
 func NewLINENotifyService(config *Config) *LINENotifyService {
 	svc := &LINENotifyService{
-		service: newService(config).withBaseURL(line.NotifyAPIURL),
+		service: newService(config).withBaseURL(lineNotifyAPIURL),
 	}
 	return svc
 }
 
-// NewPayload returns a new Payload.
-func (s LINENotifyService) NewPayload(text string) line.Payload {
-	p := line.Payload{
-		Message: text,
-	}
-	return p
-}
-
-// Post posts data to LINE.
-func (s LINENotifyService) Post(v interface{}) (*http.Response, error) {
-	var body io.Reader
-	switch v := v.(type) {
-	case io.Reader:
-		body = v
-
-	case string:
-		buf := bytes.NewBufferString("message=" + v)
-		body = buf
-
-	case line.Payload:
-		buf := bytes.NewBufferString("message=" + v.Message)
-		body = buf
-
-	case *line.Payload:
-		buf := bytes.NewBufferString("message=" + v.Message)
-		body = buf
-
-	}
-
+// Post posts a payload to LINE.
+func (s LINENotifyService) Post(contentType string, body io.Reader) (*http.Response, error) {
 	req, err := http.NewRequest("POST", s.baseURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add("Content-Type", bodyTypeURLEncoded)
+	req.Header.Add("Content-Type", contentType)
 	req.Header.Add("Authorization", "Bearer "+s.service.config.AccessToken)
-
 	return s.config.HTTPClient.Do(req)
+}
+
+// PostMessagePayload posts a message payload to LINE.
+func (s LINENotifyService) PostMessagePayload(payload MessagePayload) (*http.Response, error) {
+	buf := bytes.NewBufferString("message=" + payload.Message)
+	return s.Post(bodyTypeURLEncoded, buf)
 }

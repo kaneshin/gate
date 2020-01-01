@@ -5,21 +5,63 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"syscall"
+	"sync"
 
 	"github.com/kaneshin/gate"
 	"github.com/kaneshin/gate/cmd/internal"
-	"github.com/kaneshin/gate/facebook"
-	"github.com/kaneshin/gate/slack"
 )
 
-var (
-	slackIncomingServices    map[string]*gate.SlackIncomingService
-	lineNotifyService        *gate.LINENotifyService
-	facebookMessengerService *gate.FacebookMessengerService
-)
+type Data struct {
+	Target string
+	Text   string `json:"text"`
+}
 
-const slackIncomingDefaultKey = "github.com/kaneshin/gate/incoming_default"
+func postToSlackIncoming(data Data) error {
+	config := gate.NewConfig().WithHTTPClient(http.DefaultClient)
+	svc := gate.NewSlackIncomingService(config).WithBaseURL(data.Target)
+	_, err := svc.PostTextPayload(gate.TextPayload{
+		Text: data.Text,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func postToLINENotify(data Data) error {
+	config := gate.NewConfig().WithHTTPClient(http.DefaultClient)
+	config.WithAccessToken(data.Target)
+	svc := gate.NewLINENotifyService(config)
+	_, err := svc.PostMessagePayload(gate.MessagePayload{
+		Message: data.Text,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func post(name, text string) string {
+	v, ok := internal.Config.Targets.Load(name)
+	if !ok {
+		return fmt.Sprintf("✘ %s not found in your config\n", name)
+	}
+	data := Data{
+		Target: v.(string),
+		Text:   text,
+	}
+	var err error
+	if internal.Config.Slack.IsIncoming(name) {
+		err = postToSlackIncoming(data)
+	}
+	if internal.Config.LINE.IsNotify(name) {
+		err = postToLINENotify(data)
+	}
+	if err != nil {
+		return fmt.Sprintf("✘ %s %v\n", name, err)
+	}
+	return fmt.Sprintf("✔ %s\n", name)
+}
 
 func handler(w http.ResponseWriter, r *http.Request) {
 	defer func() {
@@ -29,168 +71,42 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	if r.Method != http.MethodPost {
+		http.Error(w, "405 Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	var err error
-	message := r.FormValue("message")
-	color := r.FormValue("color")
-	image := r.FormValue("image")
-
-	if slackIncomingServices != nil {
-		ch := r.FormValue("slack.channel")
-		name := r.FormValue("slack.username")
-		emoji := r.FormValue("slack.emoji")
-
-		key := ""
-		if ch == "" {
-			if len(internal.Config.Slack.App.Incoming) > 0 {
-				ch = internal.Config.Slack.App.Incoming[0].Channel
-				key = ch
-			} else {
-				ch = internal.Config.Slack.Incoming.Channel
-				key = slackIncomingDefaultKey
-			}
-		} else {
-			for _, v := range internal.Config.Slack.App.Incoming {
-				if ch == v.Channel {
-					key = ch
-					break
-				}
-			}
-			if key == "" {
-				key = slackIncomingDefaultKey
-			}
-		}
-		if name != "" || emoji != "" {
-			key = slackIncomingDefaultKey
-		}
-		svc, ok := slackIncomingServices[key]
-		if !ok {
-			goto finish_slack
-		}
-
-		payload := svc.NewPayload(ch, message)
-		payload.Username = internal.Config.Slack.Incoming.Username
-		payload.IconEmoji = internal.Config.Slack.Incoming.IconEmoji
-
-		if name != "" {
-			payload.Username = name
-		}
-		if emoji != "" {
-			payload.IconEmoji = emoji
-		}
-
-		if color != "" {
-			att := slack.Attachment{
-				Color: color,
-				Text:  message,
-			}
-			payload.Text = ""
-			payload.Attachments = append(payload.Attachments, att)
-		}
-
-		if image != "" {
-			att := slack.Attachment{
-				ImageURL: image,
-			}
-			payload.Attachments = append(payload.Attachments, att)
-		}
-
-		_, err = svc.Post(payload)
-		if err != nil {
-			log.Printf("[ERROR] %v", err)
-		}
-	}
-finish_slack:
-
-	if lineNotifyService != nil {
-		_, err = lineNotifyService.Post(message)
-		if err != nil {
-			log.Printf("[ERROR] %v", err)
-		}
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
-	if facebookMessengerService != nil {
-		id := internal.Config.Facebook.Messenger.ID
-		payload := facebookMessengerService.NewPayload(id, message)
-		payload.NotificationType = facebook.NotificationTypeRegular
-		_, err = facebookMessengerService.Post(payload)
-		if err != nil {
-			log.Printf("[ERROR] %v", err)
-		}
+	text := r.FormValue("text")
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	for _, name := range r.Form["target"] {
+		wg.Add(1)
+		name := name
+		go func(mu *sync.Mutex) {
+			defer wg.Done()
+			mu.Lock()
+			fmt.Fprint(w, post(name, text))
+			mu.Unlock()
+		}(&mu)
 	}
-}
-
-func newSlackIncomingServices(hcl *http.Client) map[string]*gate.SlackIncomingService {
-	svc := map[string]*gate.SlackIncomingService{}
-	url := internal.Config.Slack.Incoming.URL
-	if url == "" {
-		url = os.Getenv("SLACK_INCOMING_URL")
-	}
-	if url != "" {
-		svc[slackIncomingDefaultKey] = gate.NewSlackIncomingService(
-			gate.NewConfig().WithHTTPClient(hcl),
-		).WithBaseURL(url)
-	}
-
-	for _, v := range internal.Config.Slack.App.Incoming {
-		if v.URL == "" || v.Channel == "" {
-			continue
-		}
-		svc[v.Channel] = gate.NewSlackIncomingService(
-			gate.NewConfig().WithHTTPClient(hcl),
-		).WithBaseURL(v.URL)
-	}
-	return svc
-}
-
-func newLINENotifyService(hcl *http.Client) *gate.LINENotifyService {
-	token := internal.Config.LINE.Notify.AccessToken
-	if token == "" {
-		token = os.Getenv("LINE_NOTIFY_ACCESS_TOKEN")
-	}
-	if token == "" {
-		return nil
-	}
-	conf := gate.NewConfig().WithHTTPClient(hcl).WithAccessToken(token)
-	return gate.NewLINENotifyService(conf)
-}
-
-func newFacebookMessengerService(hcl *http.Client) *gate.FacebookMessengerService {
-	token := internal.Config.Facebook.Messenger.AccessToken
-	if token == "" {
-		token = os.Getenv("FACEBOOK_MESSENGER_ACCESS_TOKEN")
-	}
-	if token == "" {
-		return nil
-	}
-	conf := gate.NewConfig().WithHTTPClient(hcl).WithAccessToken(token)
-	return gate.NewFacebookMessengerService(conf)
+	wg.Wait()
 }
 
 func main() {
-	internal.ParseFlag()
-
-	sigc := make(chan os.Signal)
-	internal.Trap(sigc, map[syscall.Signal]func(os.Signal){
-		syscall.SIGINT: func(sig os.Signal) {
-			log.Printf("interrupt: %v", sig)
-			os.Exit(1)
-		},
-		syscall.SIGTERM: func(sig os.Signal) {
-			log.Printf("interrupt: %v", sig)
-			os.Exit(1)
-		},
-	})
-
-	hcl := &http.Client{}
-	slackIncomingServices = newSlackIncomingServices(hcl)
-	lineNotifyService = newLINENotifyService(hcl)
-	facebookMessengerService = newFacebookMessengerService(hcl)
+	err := internal.Load()
+	if err != nil {
+		fmt.Printf("%v\n", err)
+		os.Exit(1)
+	}
 
 	http.HandleFunc("/", handler)
 
-	port := fmt.Sprintf(":%d", internal.Config.Gate.Port)
+	port := fmt.Sprintf(":%d", internal.Config.Env.Port)
+	fmt.Printf("Listening for HTTP on %s%s\n", internal.Config.Env.Host, port)
 	log.Fatal(http.ListenAndServe(port, http.DefaultServeMux))
 }

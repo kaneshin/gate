@@ -1,51 +1,50 @@
 package internal
 
 import (
-	"flag"
-	"os"
-
-	"github.com/BurntSushi/toml"
+	"strings"
+	"sync"
 )
 
-// Config represents a configuration of commands.
-var Config = struct {
-	Gate struct {
-		Host string `toml:"host"`
-		Port int    `toml:"port"`
-	} `toml:"gate"`
-	Slack struct {
-		App struct {
-			Incoming []struct {
-				URL     string `toml:"url"`
-				Channel string `toml:"channel"`
-			}
-		} `toml:"app"`
-		Incoming struct {
-			URL       string `toml:"url"`
-			Channel   string `toml:"channel"`
-			Username  string `toml:"username"`
-			IconEmoji string `toml:"icon_emoji"`
-		} `toml:"incoming"`
-	} `toml:"slack"`
-	LINE struct {
-		Notify struct {
-			AccessToken string `toml:"access_token"`
-		} `toml:"notify"`
-	} `toml:"line"`
-	Facebook struct {
-		Messenger struct {
-			ID          string `toml:"id"`
-			AccessToken string `toml:"access_token"`
-		} `toml:"messenger"`
-	} `toml:"facebook"`
-}{}
+const (
+	slackIncoming = "slack.incoming."
+	lineNotify    = "line.notify."
+)
 
-// ParseFlag parses flag options and toml file.
-func ParseFlag() error {
-	var configPath string
-	flag.StringVar(&configPath, "config", "$HOME/.config/gate.tml", "")
-	flag.Parse()
+type (
+	slack struct {
+		Incoming map[string]string `yaml:"incoming"`
+	}
 
-	_, err := toml.DecodeFile(os.ExpandEnv(configPath), &Config)
-	return err
+	line struct {
+		Notify map[string]string `yaml:"notify"`
+	}
+
+	config struct {
+		Targets       sync.Map
+		DefaultTarget string `yaml:"default_target"`
+		Env           struct {
+			Host string `yaml:"host"`
+			Port int    `yaml:"port"`
+		} `yaml:"env"`
+		Slack slack `yaml:"slack"`
+		LINE  line  `yaml:"line"`
+	}
+)
+
+func (c *config) apply() error {
+	for k, v := range c.Slack.Incoming {
+		c.Targets.Store(slackIncoming+k, v)
+	}
+	for k, v := range c.LINE.Notify {
+		c.Targets.Store(lineNotify+k, v)
+	}
+	return nil
+}
+
+func (c slack) IsIncoming(name string) bool {
+	return strings.HasPrefix(name, slackIncoming)
+}
+
+func (c line) IsNotify(name string) bool {
+	return strings.HasPrefix(name, lineNotify)
 }
