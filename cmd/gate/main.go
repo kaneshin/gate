@@ -1,15 +1,15 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"sync"
 
-	"github.com/k0kubun/pp"
+	"github.com/kaneshin/gate"
 	"github.com/kaneshin/gate/cmd/internal"
-	"github.com/pkg/errors"
 )
 
 type Data struct {
@@ -17,27 +17,43 @@ type Data struct {
 	Text   string `json:"text"`
 }
 
-func Post(data Data) error {
-	pp.Println(data)
-	target, ok := internal.Config.Targets[data.Target]
-	if !ok {
-		return errors.New(fmt.Sprintf("%s is not defined", data.Target))
-	}
+var config = gate.NewConfig().WithHTTPClient(http.DefaultClient)
 
-	if data.Text == "" {
-		return nil
-	}
-
-	b, err := json.Marshal(data)
-	if err != nil {
-		return err
-	}
-	var buf = bytes.NewBuffer(b)
-	_, err = http.Post(target, "application/json", buf)
+func postToSlackIncoming(data Data) error {
+	svc := gate.NewSlackIncomingService(config).WithBaseURL(data.Target)
+	_, err := svc.PostTextData(gate.TextData{
+		Text: data.Text,
+	})
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func postToLINENotify(data Data) error {
+	return errors.New("no implementation")
+}
+
+func post(name, text string) string {
+	v, ok := internal.Config.Targets.Load(name)
+	if !ok {
+		return fmt.Sprintf("✘ %s not found in your config\n", name)
+	}
+	data := Data{
+		Target: v.(string),
+		Text:   text,
+	}
+	var err error
+	if internal.Config.Slack.IsIncoming(name) {
+		err = postToSlackIncoming(data)
+	}
+	if internal.Config.LINE.IsNotify(name) {
+		err = postToLINENotify(data)
+	}
+	if err != nil {
+		return fmt.Sprintf("✘ %s %v\n", name, err)
+	}
+	return fmt.Sprintf("✔ %s\n", name)
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -59,40 +75,31 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	text := r.FormValue("text")
-	for _, v := range r.Form["target"] {
-		if _, ok := internal.Config.Targets[v]; !ok {
-			msg := v + " target is not found in your config"
-			if err == nil {
-				err = errors.New(msg)
-			} else {
-				err = errors.Wrap(err, msg)
-			}
-			continue
-		}
-		d := Data{
-			Target: v,
-			Text:   text,
-		}
-		if err1 := Post(d); err1 != nil {
-			if err == nil {
-				err = err1
-			} else {
-				err = errors.Wrap(err, err1.Error())
-			}
-		}
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	for _, name := range r.Form["target"] {
+		wg.Add(1)
+		name := name
+		go func(mu *sync.Mutex) {
+			defer wg.Done()
+			mu.Lock()
+			fmt.Fprint(w, post(name, text))
+			mu.Unlock()
+		}(&mu)
 	}
-
-	fmt.Fprintln(w, "success")
-	if err != nil {
-		fmt.Fprintf(w, "\n%v\n", err)
-	}
+	wg.Wait()
 }
 
 func main() {
-	internal.Load()
+	err := internal.Load()
+	if err != nil {
+		fmt.Printf("%v\n", err)
+		os.Exit(1)
+	}
 
 	http.HandleFunc("/", handler)
 
 	port := fmt.Sprintf(":%d", internal.Config.Env.Port)
+	fmt.Printf("Listening for HTTP on %s%s\n", internal.Config.Env.Host, port)
 	log.Fatal(http.ListenAndServe(port, http.DefaultServeMux))
 }

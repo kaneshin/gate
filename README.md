@@ -1,8 +1,6 @@
 # Gate
 
-[![GoDoc](https://godoc.org/github.com/kaneshin/gate?status.svg)](https://godoc.org/github.com/kaneshin/gate)
-[![codecov](https://codecov.io/gh/kaneshin/gate/branch/master/graph/badge.svg)](https://codecov.io/gh/kaneshin/gate)
-[![Go Report Card](https://goreportcard.com/badge/github.com/kaneshin/gate)](https://goreportcard.com/report/github.com/kaneshin/gate)
+Gate posts a message in Slack and LINE.
 
 ## Installation
 
@@ -10,9 +8,9 @@
 go get github.com/kaneshin/gate/cmd/...
 ```
 
-## Usage
+## Setup
 
-Create `~/.config/gate/config.yml` to be loaded by tools.
+Gate loads its configuration in ~/.config/gate/config.yml as a default. You need to create it then setup your channels' configuration:
 
 ```yml
 ---
@@ -29,10 +27,14 @@ slack:
 
 line:
   notify:
-    room-1: '[YOUR-ACCESS-TOKEN]'
+    service-1: '[YOUR-ACCESS-TOKEN]'
 ```
 
+## Usage
+
 ### gate
+
+Run the gate server
 
 ```shell
 $ gate

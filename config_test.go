@@ -15,9 +15,7 @@ func TestConfig(t *testing.T) {
 	assert.Nil(conf.HTTPClient)
 	assert.Empty(conf.AccessToken)
 
-	conf.WithHTTPClient(http.DefaultClient).
-		WithAccessToken("access-token")
-
+	conf.WithHTTPClient(http.DefaultClient).WithAccessToken("access-token")
 	assert.Equal(http.DefaultClient, conf.HTTPClient)
 	assert.Equal("access-token", conf.AccessToken)
 }

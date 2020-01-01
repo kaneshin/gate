@@ -14,9 +14,5 @@ func TestSlack(t *testing.T) {
 		svc := NewSlackIncomingService(NewConfig())
 		assert.NotNil(t, svc)
 		assert.Nil(t, svc.baseURL)
-
-		payload := svc.NewPayload("#general", "foobar")
-		assert.Equal(t, "#general", payload.Channel)
-		assert.Equal(t, "foobar", payload.Text)
 	})
 }

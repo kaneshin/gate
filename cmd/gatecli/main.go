@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -18,37 +17,52 @@ var (
 	code   = flag.Bool("code", false, "")
 )
 
-func main() {
-	internal.Load()
-
-	// Execute: echo "foo" | go run main.go
-	body, err := ioutil.ReadAll(os.Stdin)
+func run() error {
+	b, err := ioutil.ReadAll(os.Stdin)
 	if err != nil {
-		log.Fatal(err)
-	}
-	str := strings.TrimSpace(string(body))
-
-	if *target == "" {
-		*target = internal.Config.DefaultTarget
-	}
-	val := url.Values{
-		"target": strings.Split(*target, ","),
+		return err
 	}
 
-	if body != nil {
+	text := strings.TrimSpace(string(b))
+	if text != "" {
+		if *target == "" {
+			*target = internal.Config.DefaultTarget
+		}
+
 		if *code {
-			val.Set("text", "```"+str+"```")
-		} else {
-			val.Set("text", str)
+			text = fmt.Sprintf("```\n%s\n```", text)
+		}
+
+		val := url.Values{
+			"target": strings.Split(*target, ","),
+			"text":   []string{text},
 		}
 
 		url := fmt.Sprintf("%s:%d", internal.Config.Env.Host, internal.Config.Env.Port)
 		resp, err := http.PostForm(url, val)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		defer resp.Body.Close()
-		b, err := ioutil.ReadAll(resp.Body)
+		b, err = ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
 		fmt.Println(string(b))
+	}
+	return nil
+}
+
+func main() {
+	err := internal.Load()
+	if err != nil {
+		fmt.Printf("%v\n", err)
+		os.Exit(1)
+	}
+
+	err = run()
+	if err != nil {
+		fmt.Printf("%v\n", err)
+		os.Exit(1)
 	}
 }
