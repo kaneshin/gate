@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -17,11 +16,10 @@ type Data struct {
 	Text   string `json:"text"`
 }
 
-var config = gate.NewConfig().WithHTTPClient(http.DefaultClient)
-
 func postToSlackIncoming(data Data) error {
+	config := gate.NewConfig().WithHTTPClient(http.DefaultClient)
 	svc := gate.NewSlackIncomingService(config).WithBaseURL(data.Target)
-	_, err := svc.PostTextData(gate.TextData{
+	_, err := svc.PostTextPayload(gate.TextPayload{
 		Text: data.Text,
 	})
 	if err != nil {
@@ -31,7 +29,16 @@ func postToSlackIncoming(data Data) error {
 }
 
 func postToLINENotify(data Data) error {
-	return errors.New("no implementation")
+	config := gate.NewConfig().WithHTTPClient(http.DefaultClient)
+	config.WithAccessToken(data.Target)
+	svc := gate.NewLINENotifyService(config)
+	_, err := svc.PostMessagePayload(gate.MessagePayload{
+		Message: data.Text,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func post(name, text string) string {

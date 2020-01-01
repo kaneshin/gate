@@ -28,7 +28,7 @@ func (s *SlackIncomingService) WithBaseURL(baseURL string) *SlackIncomingService
 	return s
 }
 
-// Post posts data to slack.
+// Post posts a payload to slack.
 func (s SlackIncomingService) Post(contentType string, body io.Reader) (*http.Response, error) {
 	req, err := http.NewRequest("POST", s.baseURL.String(), body)
 	if err != nil {
@@ -38,13 +38,9 @@ func (s SlackIncomingService) Post(contentType string, body io.Reader) (*http.Re
 	return s.config.HTTPClient.Do(req)
 }
 
-type TextData struct {
-	Text string `json:"text"`
-}
-
-// PostTextData posts text data to slack.
-func (s SlackIncomingService) PostTextData(data TextData) (*http.Response, error) {
-	b, err := json.Marshal(data)
+// PostTextPayload posts a text payload to slack.
+func (s SlackIncomingService) PostTextPayload(payload TextPayload) (*http.Response, error) {
+	b, err := json.Marshal(payload)
 	if err != nil {
 		return nil, err
 	}
