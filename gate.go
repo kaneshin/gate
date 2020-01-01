@@ -6,7 +6,7 @@ import (
 )
 
 // Version represents gate's semantic version.
-const Version = "v1.2.0"
+const Version = "v1.2.1"
 
 const (
 	bodyTypeURLEncoded = "application/x-www-form-urlencoded"
