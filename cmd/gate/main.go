@@ -175,26 +175,13 @@ func configHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		gate := config.Gate
-		net.InterfaceAddrs()
-		addrs, err := net.InterfaceAddrs()
-		if err != nil {
-			internalServerErrorHandler(w, r)
-			log.Printf("Error: %v", err)
-			return
-		}
-
-		for _, addr := range addrs {
-			ipnet, ok := addr.(*net.IPNet)
-			if ok && isPrivateIP(ipnet.IP) {
-				gate.Host = ipnet.IP.String()
-			}
-		}
+		gate.Host = privateIP()
 
 		c := map[string]interface{}{
 			"gate": gate,
 		}
 		var buf bytes.Buffer
-		err = json.NewEncoder(&buf).Encode(c)
+		err := json.NewEncoder(&buf).Encode(c)
 		if err != nil {
 			internalServerErrorHandler(w, r)
 			log.Printf("Error: %v", err)
@@ -228,6 +215,23 @@ func isPrivateIP(ip net.IP) bool {
 		}
 	}
 	return false
+}
+
+func privateIP() string {
+	net.InterfaceAddrs()
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		log.Printf("Error: %v", err)
+		return "0.0.0.0"
+	}
+
+	for _, addr := range addrs {
+		ipnet, ok := addr.(*net.IPNet)
+		if ok && isPrivateIP(ipnet.IP) {
+			return ipnet.IP.String()
+		}
+	}
+	return "0.0.0.0"
 }
 
 type Config struct {
@@ -278,6 +282,6 @@ func main() {
 	fmt.Fprintf(os.Stdout, "Listening for HTTP on %s://%s%s\n\n", scheme, config.Gate.Host, port)
 	fmt.Fprintf(os.Stdout,
 		"Please run the command to fetch cli.json\n\n  curl -sL %s://%s%s%s > ~/.config/gate/cli.json\n\n",
-		scheme, config.Gate.Host, port, internal.ConfigCLIJSON)
+		scheme, privateIP(), port, internal.ConfigCLIJSON)
 	log.Fatal(http.ListenAndServe(port, http.DefaultServeMux))
 }
