@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"os"
@@ -14,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/kaneshin/gate"
+	"github.com/kaneshin/gate/cmd/internal"
 )
 
 func postToSlackIncoming(url, text string) error {
@@ -140,6 +142,7 @@ func notifyHandler(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
 		if err != nil {
 			internalServerErrorHandler(w, r)
+			log.Printf("Error: %v", err)
 			return
 		}
 		target = r.FormValue("target")
@@ -165,22 +168,66 @@ func configHandler(w http.ResponseWriter, r *http.Request) {
 	defer recovery()
 
 	switch r.URL.Path {
-	case "/config/cli.json":
+	case internal.ConfigCLIJSON:
 		if r.Method != http.MethodGet {
 			methodNotAllowdHandler(w, r)
 			return
 		}
-		c := map[string]interface{}{
-			"gate": config.Gate,
-		}
-		var buf bytes.Buffer
-		err := json.NewEncoder(&buf).Encode(c)
+
+		gate := config.Gate
+		net.InterfaceAddrs()
+		addrs, err := net.InterfaceAddrs()
 		if err != nil {
 			internalServerErrorHandler(w, r)
+			log.Printf("Error: %v", err)
+			return
+		}
+
+		for _, addr := range addrs {
+			ipnet, ok := addr.(*net.IPNet)
+			if ok && isPrivateIP(ipnet.IP) {
+				gate.Host = ipnet.IP.String()
+			}
+		}
+
+		c := map[string]interface{}{
+			"gate": gate,
+		}
+		var buf bytes.Buffer
+		err = json.NewEncoder(&buf).Encode(c)
+		if err != nil {
+			internalServerErrorHandler(w, r)
+			log.Printf("Error: %v", err)
 			return
 		}
 		w.Write(buf.Bytes())
 	}
+}
+
+var privateIPBlocks []*net.IPNet
+
+func init() {
+	for _, cidr := range []string{
+		"10.0.0.0/8",     // RFC1918
+		"172.16.0.0/12",  // RFC1918
+		"192.168.0.0/16", // RFC1918
+		"169.254.0.0/16", // RFC3927 link-local
+	} {
+		_, block, err := net.ParseCIDR(cidr)
+		if err != nil {
+			log.Panic(fmt.Errorf("parse error on %q: %v", cidr, err))
+		}
+		privateIPBlocks = append(privateIPBlocks, block)
+	}
+}
+
+func isPrivateIP(ip net.IP) bool {
+	for _, block := range privateIPBlocks {
+		if block.Contains(ip) {
+			return true
+		}
+	}
+	return false
 }
 
 type Config struct {
@@ -228,6 +275,9 @@ func main() {
 	if port == ":" {
 		scheme = ":5731" // default value
 	}
-	fmt.Fprintf(os.Stdout, "Listening for HTTP on %s://%s%s\n", scheme, config.Gate.Host, port)
+	fmt.Fprintf(os.Stdout, "Listening for HTTP on %s://%s%s\n\n", scheme, config.Gate.Host, port)
+	fmt.Fprintf(os.Stdout,
+		"Please run the command to fetch cli.json\n\n  curl -sL %s://%s%s%s > ~/.config/gate/cli.json\n\n",
+		scheme, config.Gate.Host, port, internal.ConfigCLIJSON)
 	log.Fatal(http.ListenAndServe(port, http.DefaultServeMux))
 }
