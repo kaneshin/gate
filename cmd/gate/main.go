@@ -1,26 +1,26 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
+	"errors"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
+	"net/http/httputil"
 	"os"
-	"sync"
+	"regexp"
+	"strings"
 
 	"github.com/kaneshin/gate"
-	"github.com/kaneshin/gate/cmd/internal"
 )
 
-type Data struct {
-	Target string
-	Text   string `json:"text"`
-}
-
-func postToSlackIncoming(data Data) error {
+func postToSlackIncoming(url, text string) error {
 	config := gate.NewConfig().WithHTTPClient(http.DefaultClient)
-	svc := gate.NewSlackIncomingService(config).WithBaseURL(data.Target)
+	svc := gate.NewSlackIncomingService(config).WithBaseURL(url)
 	_, err := svc.PostTextPayload(gate.TextPayload{
-		Text: data.Text,
+		Text: text,
 	})
 	if err != nil {
 		return err
@@ -28,12 +28,12 @@ func postToSlackIncoming(data Data) error {
 	return nil
 }
 
-func postToLINENotify(data Data) error {
+func postToLINENotify(token, text string) error {
 	config := gate.NewConfig().WithHTTPClient(http.DefaultClient)
-	config.WithAccessToken(data.Target)
+	config.WithAccessToken(token)
 	svc := gate.NewLINENotifyService(config)
 	_, err := svc.PostMessagePayload(gate.MessagePayload{
-		Message: data.Text,
+		Message: text,
 	})
 	if err != nil {
 		return err
@@ -41,72 +41,193 @@ func postToLINENotify(data Data) error {
 	return nil
 }
 
-func post(name, text string) string {
-	v, ok := internal.Config.Targets.Load(name)
-	if !ok {
-		return fmt.Sprintf("✘ %s not found in your config\n", name)
-	}
-	data := Data{
-		Target: v.(string),
-		Text:   text,
-	}
+var errNotSupportedPlatform = errors.New("not supported platform")
+var errNotDefinedTarget = errors.New("not defined target")
+
+func post(name, text string) error {
 	var err error
-	if internal.Config.Slack.IsIncoming(name) {
-		err = postToSlackIncoming(data)
+	var buf bytes.Buffer
+	var v map[string]map[string]string
+
+	err = json.NewEncoder(&buf).Encode(config.Platforms)
+	if err != nil {
+		return err
 	}
-	if internal.Config.LINE.IsNotify(name) {
-		err = postToLINENotify(data)
+	err = json.NewDecoder(&buf).Decode(&v)
+	if err != nil {
+		return err
+	}
+
+	el := strings.Split(name, ".")
+	platform, ok := v[el[0]]
+	if !ok {
+		return errNotDefinedTarget
+	}
+	target, ok := platform[el[1]]
+	if !ok {
+		return errNotDefinedTarget
+	}
+
+	switch el[0] {
+	case "slack":
+		err = postToSlackIncoming(target, text)
+	case "line":
+		err = postToLINENotify(target, text)
+	default:
+		err = errNotSupportedPlatform
 	}
 	if err != nil {
-		return fmt.Sprintf("✘ %s %v\n", name, err)
+		return err
 	}
-	return fmt.Sprintf("✔ %s\n", name)
+	return nil
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
-	defer func() {
-		if r := recover(); r != nil {
-			log.Println(r)
-		}
-	}()
+func recovery() {
+	if r := recover(); r != nil {
+		log.Printf("[Fatal] Recover: %v", r)
+	}
+}
 
+func notFoundHandler(w http.ResponseWriter, r *http.Request) {
+	b, err := httputil.DumpRequest(r, false)
+	if err != nil {
+		log.Printf("[Request] 404 Not Found: %s", err)
+	} else {
+		log.Printf("[Request] 404 Not Found: %s", string(b))
+	}
+	http.Error(w, "404 Not Found", http.StatusNotFound)
+}
+
+func methodNotAllowdHandler(w http.ResponseWriter, r *http.Request) {
+	b, err := httputil.DumpRequest(r, false)
+	if err != nil {
+		log.Printf("[Request] 405 Method Not Allowed: %s", err)
+	} else {
+		log.Printf("[Request] 405 Method Not Allowed: %s", string(b))
+	}
+	http.Error(w, "405 Method Not Allowed", http.StatusMethodNotAllowed)
+}
+
+func internalServerErrorHandler(w http.ResponseWriter, r *http.Request) {
+	b, err := httputil.DumpRequest(r, false)
+	if err != nil {
+		log.Printf("[Request] 500 Internal Server Error: %s", err)
+	} else {
+		log.Printf("[Request] 500 Internal Server Error: %s", string(b))
+	}
+	http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
+}
+
+var notifyReg = regexp.MustCompile(`/notify/(|.+\..+)$`)
+
+func notifyHandler(w http.ResponseWriter, r *http.Request) {
+	defer recovery()
+
+	if !notifyReg.MatchString(r.URL.Path) {
+		notFoundHandler(w, r)
+		return
+	}
 	if r.Method != http.MethodPost {
-		http.Error(w, "405 Not Allowed", http.StatusMethodNotAllowed)
+		methodNotAllowdHandler(w, r)
 		return
 	}
 
-	err := r.ParseForm()
+	var text string
+	var target string
+	matches := notifyReg.FindStringSubmatch(r.URL.Path)
+	if matches[1] == "" {
+		// POST /notify/
+		err := r.ParseForm()
+		if err != nil {
+			internalServerErrorHandler(w, r)
+			return
+		}
+		target = r.FormValue("target")
+		text = r.FormValue("text")
+	} else {
+		// POST /notify/[platform].[target]?t=[text]
+		target = matches[1]
+		text = r.URL.Query().Get("t")
+	}
+
+	var msg string
+	err := post(target, text)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		msg = fmt.Sprintf("✘ %s: failed %s\n", target, err)
+	} else {
+		msg = fmt.Sprintf("✔ %s: success\n", target)
 	}
-
-	text := r.FormValue("text")
-	var wg sync.WaitGroup
-	var mu sync.Mutex
-	for _, name := range r.Form["target"] {
-		wg.Add(1)
-		name := name
-		go func(mu *sync.Mutex) {
-			defer wg.Done()
-			mu.Lock()
-			fmt.Fprint(w, post(name, text))
-			mu.Unlock()
-		}(&mu)
-	}
-	wg.Wait()
+	log.Printf("[Notify] %s", msg)
+	w.Write([]byte(msg))
 }
+
+func configHandler(w http.ResponseWriter, r *http.Request) {
+	defer recovery()
+
+	switch r.URL.Path {
+	case "/config/cli.json":
+		if r.Method != http.MethodGet {
+			methodNotAllowdHandler(w, r)
+			return
+		}
+		c := map[string]interface{}{
+			"gate": config.Gate,
+		}
+		var buf bytes.Buffer
+		err := json.NewEncoder(&buf).Encode(c)
+		if err != nil {
+			internalServerErrorHandler(w, r)
+			return
+		}
+		w.Write(buf.Bytes())
+	}
+}
+
+type Config struct {
+	Gate struct {
+		Scheme string `json:"scheme"`
+		Host   string `json:"host"`
+		Port   int    `json:"port"`
+		Client struct {
+			Default string `json:"default"`
+		} `json:"client"`
+	} `json:"gate"`
+	Platforms struct {
+		Slack map[string]string `json:"slack"`
+		Line  map[string]string `json:"line"`
+	} `json:"platforms"`
+}
+
+var configPath = flag.String("config", "$HOME/.config/gate/config.json", "")
+var config Config
 
 func main() {
-	err := internal.Load()
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
+		flag.PrintDefaults()
+	}
+	flag.Parse()
+
+	f, err := os.Open(os.ExpandEnv(*configPath))
 	if err != nil {
-		fmt.Printf("%v\n", err)
-		os.Exit(1)
+		log.Fatal(err)
+	}
+	err = json.NewDecoder(f).Decode(&config)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	http.HandleFunc("/", handler)
+	http.HandleFunc("/notify/", notifyHandler)
+	http.HandleFunc("/config/", configHandler)
 
-	port := fmt.Sprintf(":%d", internal.Config.Env.Port)
-	fmt.Printf("Listening for HTTP on %s%s\n", internal.Config.Env.Host, port)
+	scheme := config.Gate.Scheme
+	if scheme == "" {
+		scheme = "http" // default value
+	}
+	port := fmt.Sprintf(":%d", config.Gate.Port)
+	if port == ":" {
+		scheme = ":5731" // default value
+	}
+	fmt.Fprintf(os.Stdout, "Listening for HTTP on %s://%s%s\n", scheme, config.Gate.Host, port)
 	log.Fatal(http.ListenAndServe(port, http.DefaultServeMux))
 }
