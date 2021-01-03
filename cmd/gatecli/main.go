@@ -36,12 +36,13 @@ func run() error {
 		}
 	}
 
-	if *target == "" {
-		*target = config.Gate.Client.Default
+	target := flag.Arg(0)
+	if target == "" {
+		target = config.Gate.Client.Default
 	}
 
 	val := url.Values{
-		"target": []string{*target},
+		"target": []string{target},
 		"text":   []string{text},
 	}
 
@@ -79,7 +80,6 @@ type Config struct {
 	} `json:"gate"`
 }
 
-var target = flag.String("target", "", "Post to the specified target")
 var code = flag.Bool("code", false, "Be inline-code")
 var quote = flag.Bool("quote", false, "Be quote-text")
 var configPath = flag.String("config", "$HOME/.config/gate/cli.json", "")

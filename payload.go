@@ -10,4 +10,11 @@ type (
 	MessagePayload struct {
 		Message string `json:"message"`
 	}
+
+	// GraphPayload represents a graph payload.
+	GraphPayload struct {
+		ID       string `json:"id"`
+		Date     string `json:"date"`
+		Quantity string `json:"quantity"`
+	}
 )

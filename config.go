@@ -8,6 +8,7 @@ type (
 		// The HTTP client to use when sending requests.
 		HTTPClient *http.Client
 
+		ID          string
 		AccessToken string
 	}
 )
@@ -25,6 +26,13 @@ func NewConfig() *Config {
 // for chaining.
 func (c *Config) WithHTTPClient(client *http.Client) *Config {
 	c.HTTPClient = client
+	return c
+}
+
+// WithID sets an id value to verify service returning
+// a Config pointer for chaining.
+func (c *Config) WithID(id string) *Config {
+	c.ID = id
 	return c
 }
 

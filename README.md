@@ -40,6 +40,9 @@ Gate loads its configuration in ~/.config/gate/config.json as a default. You nee
     },
     "line": {
       "service-1": "[YOUR-ACCESS-TOKEN]"
+    },
+    "pixela": {
+      "username/graph-id": "[YOUR-TOKEN]"
     }
   }
 }
@@ -69,10 +72,16 @@ Then, run `gatecli` to post the platforms.
 $ echo "foobar" | gatecli
 ```
 
-If you'd like to parse another cli.json and notify specified target. Please run the command with arguments like the below.
+If you'd like to parse another cli.json and post specified target. Please run the command with arguments like the below.
 
 ```
-$ echo "foobar" | gatecli -config=/path/to/cli.json -target=slack.channel-2
+$ echo "foobar" | gatecli -config=/path/to/cli.json slack.channel-2
+```
+
+#### Pixela
+
+```shell
+echo 5 | gatecli pixela.username/graph-id
 ```
 
 ## License

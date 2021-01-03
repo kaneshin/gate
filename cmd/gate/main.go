@@ -13,10 +13,14 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/kaneshin/gate"
 	"github.com/kaneshin/gate/cmd/internal"
 )
+
+var errNotSupportedPlatform = errors.New("not supported platform")
+var errNotDefinedTarget = errors.New("not defined target")
 
 func postToSlackIncoming(url, text string) error {
 	config := gate.NewConfig().WithHTTPClient(http.DefaultClient)
@@ -43,8 +47,26 @@ func postToLINENotify(token, text string) error {
 	return nil
 }
 
-var errNotSupportedPlatform = errors.New("not supported platform")
-var errNotDefinedTarget = errors.New("not defined target")
+func postToPixela(target, token, text string) error {
+	el := strings.Split(target, "/")
+	if len(el) != 2 {
+		return errNotDefinedTarget
+	}
+
+	config := gate.NewConfig().WithHTTPClient(http.DefaultClient)
+	config.WithAccessToken(token)
+	config.WithID(el[0])
+	svc := gate.NewPixelaService(config)
+	_, err := svc.PostGraphPayload(gate.GraphPayload{
+		ID:       el[1],
+		Date:     time.Now().Format("20060102"),
+		Quantity: text,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
 func post(name, text string) error {
 	var err error
@@ -61,20 +83,26 @@ func post(name, text string) error {
 	}
 
 	el := strings.Split(name, ".")
+	if len(el) != 2 {
+		return errNotDefinedTarget
+	}
 	platform, ok := v[el[0]]
 	if !ok {
 		return errNotDefinedTarget
 	}
-	target, ok := platform[el[1]]
+	target := el[1]
+	token, ok := platform[target]
 	if !ok {
 		return errNotDefinedTarget
 	}
 
 	switch el[0] {
 	case "slack":
-		err = postToSlackIncoming(target, text)
+		err = postToSlackIncoming(token, text)
 	case "line":
-		err = postToLINENotify(target, text)
+		err = postToLINENotify(token, text)
+	case "pixela":
+		err = postToPixela(target, token, text)
 	default:
 		err = errNotSupportedPlatform
 	}
@@ -244,8 +272,9 @@ type Config struct {
 		} `json:"client"`
 	} `json:"gate"`
 	Platforms struct {
-		Slack map[string]string `json:"slack"`
-		Line  map[string]string `json:"line"`
+		Slack  map[string]string `json:"slack"`
+		Line   map[string]string `json:"line"`
+		Pixela map[string]string `json:"pixela"`
 	} `json:"platforms"`
 }
 
