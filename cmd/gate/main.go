@@ -120,12 +120,12 @@ func internalServerErrorHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
 }
 
-var notifyReg = regexp.MustCompile(`/notify/(|.+\..+)$`)
+var postReg = regexp.MustCompile(`/post/(|.+\..+)$`)
 
-func notifyHandler(w http.ResponseWriter, r *http.Request) {
+func postHandler(w http.ResponseWriter, r *http.Request) {
 	defer recovery()
 
-	if !notifyReg.MatchString(r.URL.Path) {
+	if !postReg.MatchString(r.URL.Path) {
 		notFoundHandler(w, r)
 		return
 	}
@@ -136,7 +136,7 @@ func notifyHandler(w http.ResponseWriter, r *http.Request) {
 
 	var text string
 	var target string
-	matches := notifyReg.FindStringSubmatch(r.URL.Path)
+	matches := postReg.FindStringSubmatch(r.URL.Path)
 	if matches[1] == "" {
 		// POST /notify/
 		err := r.ParseForm()
@@ -160,7 +160,7 @@ func notifyHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		msg = fmt.Sprintf("✔ %s: success\n", target)
 	}
-	log.Printf("[Notify] %s", msg)
+	log.Printf("[Post] %s", msg)
 	w.Write([]byte(msg))
 }
 
@@ -268,7 +268,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	http.HandleFunc("/notify/", notifyHandler)
+	http.HandleFunc("/post/", postHandler)
 	http.HandleFunc("/config/", configHandler)
 
 	scheme := config.Gate.Scheme

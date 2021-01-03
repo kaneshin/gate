@@ -54,7 +54,7 @@ func run() error {
 		scheme = ":5731" // default value
 	}
 
-	url := fmt.Sprintf("%s://%s%s/notify/", scheme, config.Gate.Host, port)
+	url := fmt.Sprintf("%s://%s%s/post/", scheme, config.Gate.Host, port)
 	resp, err := http.PostForm(url, val)
 	if err != nil {
 		return err
@@ -79,7 +79,7 @@ type Config struct {
 	} `json:"gate"`
 }
 
-var target = flag.String("target", "", "Notify to the specified target")
+var target = flag.String("target", "", "Post to the specified target")
 var code = flag.Bool("code", false, "Be inline-code")
 var quote = flag.Bool("quote", false, "Be quote-text")
 var configPath = flag.String("config", "$HOME/.config/gate/cli.json", "")
