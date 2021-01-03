@@ -6,8 +6,6 @@ import (
 	"io"
 	"net/http"
 	"path"
-
-	"github.com/budougumi0617/pixela"
 )
 
 // pixelaAPIURL is an API URL for Pixela.
@@ -17,7 +15,6 @@ type (
 	// PixelaService is a slack incoming webhook service.
 	PixelaService struct {
 		*service
-		client *pixela.Client
 	}
 )
 
@@ -25,7 +22,6 @@ type (
 func NewPixelaService(config *Config) *PixelaService {
 	return &PixelaService{
 		service: newService(config).withBaseURL(pixelaAPIURL),
-		client:  pixela.New(config.ID, config.AccessToken),
 	}
 }
 
