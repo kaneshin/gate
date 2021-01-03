@@ -69,16 +69,37 @@ $ curl -sL http://0.0.0.0:5731/config/cli.json > ~/.config/gate/cli.json
 Then, run `gatecli` to post the platforms.
 
 ```shell
-$ echo "foobar" | gatecli
+$ echo "foobar" | gatecli slack.channel-1
+$ echo "foobar" | gatecli # You can send a message without argument for the default target in cli.json
 ```
 
-If you'd like to parse another cli.json and post specified target. Please run the command with arguments like the below.
+If you'd like to parse another cli.json. Please run the command with arguments like the below.
 
 ```
 $ echo "foobar" | gatecli -config=/path/to/cli.json slack.channel-2
 ```
 
+#### Slack
+
+You need to get an incoming webhook url what channel you want to post message before run it.
+
+```shell
+echo "Hello world!" | gatecli slack.channel-1
+```
+
+#### LINE
+
+You need to create a service what channel you want to post message before run it.
+
+```shell
+echo "Hello world!" | gatecli line.service-1
+```
+
 #### Pixela
+
+You need to create a graph what you want to post quantity before run it.
+
+Input a quantity from STDIN, then pass it to `gatecli`.
 
 ```shell
 echo 5 | gatecli pixela.username/graph-id
