@@ -84,7 +84,7 @@ $ echo "foobar" | gatecli -config=/path/to/cli.json slack.channel-2
 You need to get an incoming webhook url what channel you want to post message before run it.
 
 ```shell
-echo "Hello world!" | gatecli slack.channel-1
+$ echo "Hello world!" | gatecli slack.channel-1
 ```
 
 #### LINE
@@ -92,7 +92,7 @@ echo "Hello world!" | gatecli slack.channel-1
 You need to create a service what channel you want to post message before run it.
 
 ```shell
-echo "Hello world!" | gatecli line.service-1
+$ echo "Hello world!" | gatecli line.service-1
 ```
 
 #### Pixela
@@ -102,7 +102,7 @@ You need to create a graph what you want to post quantity before run it.
 Input a quantity from STDIN, then pass it to `gatecli`.
 
 ```shell
-echo 5 | gatecli pixela.username/graph-id
+$ echo 5 | gatecli pixela.username/graph-id
 ```
 
 ## License
