@@ -47,3 +47,26 @@ func (s PixelaService) PostGraphPayload(payload GraphPayload) (*http.Response, e
 	buf := bytes.NewBuffer(b)
 	return s.Post(payload.ID, buf)
 }
+
+// Put updates a graph.
+func (s PixelaService) Put(id, suffix string) (*http.Response, error) {
+	u := *s.baseURL
+	u.Path = path.Join(u.Path, "users", s.config.ID, "graphs", id, suffix)
+	req, err := http.NewRequest("PUT", u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Content-Length", "0")
+	req.Header.Add("X-USER-TOKEN", s.service.config.AccessToken)
+	return s.config.HTTPClient.Do(req)
+}
+
+// Increment increments quantity of a graph.
+func (s PixelaService) Increment(payload GraphPayload) (*http.Response, error) {
+	return s.Put(payload.ID, "increment")
+}
+
+// Decrement decrements quantity of a graph.
+func (s PixelaService) Decrement(payload GraphPayload) (*http.Response, error) {
+	return s.Put(payload.ID, "decrement")
+}

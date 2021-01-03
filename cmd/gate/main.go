@@ -57,11 +57,21 @@ func postToPixela(target, token, text string) error {
 	config.WithAccessToken(token)
 	config.WithID(el[0])
 	svc := gate.NewPixelaService(config)
-	_, err := svc.PostGraphPayload(gate.GraphPayload{
-		ID:       el[1],
-		Date:     time.Now().Format("20060102"),
-		Quantity: text,
-	})
+
+	payload := gate.GraphPayload{
+		ID: el[1],
+	}
+	var err error
+	switch text {
+	case "i", "inc", "increment":
+		_, err = svc.Increment(payload)
+	case "d", "dec", "decrement":
+		_, err = svc.Decrement(payload)
+	default:
+		payload.Date = time.Now().Format("20060102")
+		payload.Quantity = text
+		_, err = svc.PostGraphPayload(payload)
+	}
 	if err != nil {
 		return err
 	}

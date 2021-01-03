@@ -81,7 +81,7 @@ $ echo "foobar" | gatecli -config=/path/to/cli.json slack.channel-2
 
 #### Slack
 
-You need to get an incoming webhook url what channel you want to post message before run it.
+You need to get an incoming webhook url what you want to post message before run it.
 
 ```shell
 $ echo "Hello world!" | gatecli slack.channel-1
@@ -89,7 +89,7 @@ $ echo "Hello world!" | gatecli slack.channel-1
 
 #### LINE
 
-You need to create a service what channel you want to post message before run it.
+You need to create a service what you want to post message before run it.
 
 ```shell
 $ echo "Hello world!" | gatecli line.service-1
@@ -97,12 +97,18 @@ $ echo "Hello world!" | gatecli line.service-1
 
 #### Pixela
 
-You need to create a graph what you want to post quantity before run it.
+You need to create a graph what you want to update before run it.
 
 Input a quantity from STDIN, then pass it to `gatecli`.
 
 ```shell
-$ echo 5 | gatecli pixela.username/graph-id
+# i, inc, or increment
+$ echo i | gatecli pixela.username/graph-id # to increment of the day
+
+# d, dec, or decrement
+$ echo d | gatecli pixela.username/graph-id # to decrement of the day
+
+$ echo 5 | gatecli pixela.username/graph-id # to assign the quantity of the day
 ```
 
 ## License
